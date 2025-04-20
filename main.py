@@ -170,9 +170,9 @@ def render_html_from_parsed_data(data):
     return html
 
 # === Run the parser ===
-resume_file = "Jim-MacLeod-test.pdf"
-print(f"Trying to parse: {resume_file}")
-parsed_data = parse_resume(resume_file)
+# resume_file = "Jim-MacLeod-test.pdf"
+# print(f"Trying to parse: {resume_file}")
+# parsed_data = parse_resume(resume_file)
 
 # Output as JSON
 print("\n--- Parsed Resume (JSON Format) ---")
