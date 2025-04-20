@@ -1,0 +1,9 @@
+# Ignore virtual environments
+venv/
+
+# macOS system files
+.DS_Store
+
+# Test files
+*.pdf
+*.docx
