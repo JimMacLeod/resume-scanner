@@ -176,7 +176,7 @@ def render_html_from_parsed_data(data):
 
 # Output as JSON
 print("\n--- Parsed Resume (JSON Format) ---")
-print(json.dumps(parsed_data, indent=2))
+# print(json.dumps(parsed_data, indent=2))
 
 # Output as HTML
 html_output = render_html_from_parsed_data(parsed_data)
