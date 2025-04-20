@@ -18,24 +18,20 @@ def extract_text_from_docx(file_path):
     doc = docx.Document(file_path)
     return "\n".join([para.text for para in doc.paragraphs])
 
-# Extract name, email, and phone number
+# Extract contact info (name, email, phone)
 def extract_contact_info(text):
     email_match = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", text)
-    email = email_match.group(0) if email_match else "Not found"
-
     phone_match = re.search(r"\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}", text)
-    phone = phone_match.group(0) if phone_match else "Not found"
-
     lines = text.splitlines()
     possible_name = next((line.strip() for line in lines if line.strip() and "@" not in line), "Not found")
 
     return {
         "Name": possible_name,
-        "Email": email,
-        "Phone": phone
+        "Email": email_match.group(0) if email_match else "Not found",
+        "Phone": phone_match.group(0) if phone_match else "Not found"
     }
 
-# Extract skills using keyword matching
+# Extract skills
 def extract_skills(text):
     skill_keywords = [
         "Python", "Java", "JavaScript", "HTML", "CSS", "SQL", "Excel",
@@ -49,136 +45,85 @@ def extract_skills(text):
             found_skills.add(skill)
     return sorted(found_skills)
 
-# Experience extraction
+# Extract experience entries
 def extract_experience_entries(text):
     lines = text.splitlines()
     experience = []
-
-    date_pattern = re.compile(
-        r"\d{2}/\d{2}\s*(?:–|-|to)\s*(\d{2}/\d{2}|Present|Current)", re.IGNORECASE
-    )
-
-    for i in range(len(lines)):
-        line = lines[i].strip()
-        match = date_pattern.search(line)
-
-        if match:
-            date_range = match.group(0)
-            title = lines[i - 3].strip() if i - 3 >= 0 else ""
-            company = lines[i - 2].strip() if i - 2 >= 0 else ""
-
+    for i, line in enumerate(lines):
+        date_match = re.search(r"(\d{2}/\d{2})\s+[\u2013-]\s+(Present|\d{2}/\d{2})", line)
+        if date_match and i >= 2:
+            title = lines[i - 2].strip()
+            company = lines[i - 1].strip()
             experience.append({
                 "Title": title,
                 "Company": company,
-                "Dates": date_range
+                "Dates": date_match.group(0)
             })
-
     return experience
 
-# Education extraction
+# Extract education entries
 def extract_education_entries(text):
     lines = text.splitlines()
     education = []
-
-    degree_keywords = [
-        "ba", "bs", "ma", "ms", "mba", "phd", "mfa", "bfa", "jd", "associate",
-        "bachelor", "master", "doctor", "certificate", "diploma"
-    ]
-
-    def looks_like_degree(line):
-        line_clean = line.strip().lower()
-        return any(re.match(rf"^{keyword}\b", line_clean) for keyword in degree_keywords)
-
-    education_index = next(
-        (i for i, line in enumerate(lines) if line.strip().lower() == "education"),
-        None
-    )
-
-    if education_index is not None:
-        for i in range(education_index + 1, education_index + 11):
-            if i >= len(lines):
-                break
-            line = lines[i].strip()
-
-            if line.startswith("•"):
-                continue
-
-            if looks_like_degree(line):
-                degree = line
-                school = lines[i - 1].strip() if i - 1 >= 0 else ""
-                extra = lines[i + 1].strip() if i + 1 < len(lines) else ""
+    start_index = -1
+    for i, line in enumerate(lines):
+        if "EDUCATION" in line.upper():
+            start_index = i
+            break
+    if start_index == -1:
+        return education
+    for i in range(start_index + 1, len(lines) - 2):
+        degree_line = lines[i].strip()
+        school_line = lines[i + 1].strip()
+        extra_line = lines[i + 2].strip()
+        if degree_line and school_line:
+            degree_match = re.search(r"(BA|BS|MS|MA|PhD|MBA)[^\n]*", degree_line)
+            if degree_match:
                 education.append({
-                    "School": school,
-                    "Degree": degree,
-                    "Extra": extra
+                    "Degree": degree_match.group(0).strip(),
+                    "School": school_line,
+                    "Extra": extra_line
                 })
-
     return education
 
-# Resume parser returns structured data
+# Main parser
 def parse_resume(file_path):
     if not os.path.exists(file_path):
-        print("File not found:", file_path)
-        return
-
-    if file_path.lower().endswith('.pdf'):
+        return None
+    if file_path.lower().endswith(".pdf"):
         text = extract_text_from_pdf(file_path)
-    elif file_path.lower().endswith('.docx'):
+    elif file_path.lower().endswith(".docx"):
         text = extract_text_from_docx(file_path)
     else:
-        print("Unsupported file type.")
-        return
-
-    contact_info = extract_contact_info(text)
-    skills = extract_skills(text)
-    experience = extract_experience_entries(text)
-    education = extract_education_entries(text)
-
-    result_data = {
-        "contact": contact_info,
-        "skills": skills,
-        "experience": experience,
-        "education": education
+        return None
+    return {
+        "contact": extract_contact_info(text),
+        "skills": extract_skills(text),
+        "experience": extract_experience_entries(text),
+        "education": extract_education_entries(text),
     }
 
-    return result_data
-
-# Render HTML from parsed data
+# Render resume data to HTML
 def render_html_from_parsed_data(data):
     html = ""
-
-    html += "<h2>Contact Info</h2>\n<ul>"
+    html += "<h3>Contact Info</h3><ul>"
     for label, value in data["contact"].items():
         html += f"<li><strong>{label}:</strong> {value}</li>"
-    html += "</ul>\n"
+    html += "</ul>"
 
-    html += "<h2>Skills</h2>\n<ul>"
+    html += "<h3>Skills</h3><ul>"
     for skill in data["skills"]:
         html += f"<li>{skill}</li>"
-    html += "</ul>\n"
+    html += "</ul>"
 
-    html += "<h2>Experience</h2>\n<ul>"
-    for entry in data["experience"]:
-        html += f"<li><strong>{entry['Title']}</strong> at {entry['Company']} ({entry['Dates']})</li>"
-    html += "</ul>\n"
+    html += "<h3>Experience</h3><ul>"
+    for exp in data["experience"]:
+        html += f"<li>{exp['Title']} at {exp['Company']} ({exp['Dates']})</li>"
+    html += "</ul>"
 
-    html += "<h2>Education</h2>\n<ul>"
-    for entry in data["education"]:
-        html += f"<li><strong>{entry['Degree']}</strong> at {entry['School']} ({entry['Extra']})</li>"
-    html += "</ul>\n"
+    html += "<h3>Education</h3><ul>"
+    for edu in data["education"]:
+        html += f"<li>{edu['Degree']} at {edu['School']} ({edu['Extra']})</li>"
+    html += "</ul>"
 
     return html
-
-# === Run the parser ===
-# resume_file = "Jim-MacLeod-test.pdf"
-# print(f"Trying to parse: {resume_file}")
-# parsed_data = parse_resume(resume_file)
-
-# Output as JSON
-print("\n--- Parsed Resume (JSON Format) ---")
-# print(json.dumps(parsed_data, indent=2))
-
-# Output as HTML
-html_output = render_html_from_parsed_data(parsed_data)
-print("\n--- Parsed Resume (HTML Format) ---")
-print(html_output)
