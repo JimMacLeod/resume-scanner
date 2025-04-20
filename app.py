@@ -31,7 +31,7 @@ def upload_resume():
     file.save(path)
 
     parsed_data = parse_resume(path)
-    if not parsed_data:
+    if not parsed_data or not isinstance(parsed_data, dict):
         return "Unable to parse file.", 500
 
     html_result = render_html_from_parsed_data(parsed_data)
