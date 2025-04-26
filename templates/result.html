@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Parsed Resume Results</title>
+</head>
+<body>
+  <h1>Parsed Resume</h1>
+
+  <h2>Contact Info</h2>
+  <ul>
+    {% for label, value in data.contact.items() %}
+      <li><strong>{{ label }}:</strong> {{ value }}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Skills</h2>
+  <ul>
+    {% for skill in data.skills %}
+      <li>{{ skill }}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Experience</h2>
+  <ul>
+    {% for exp in data.experience %}
+      <li>{{ exp.Title }} at {{ exp.Company }} ({{ exp.Dates }})</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Education</h2>
+  <ul>
+    {% for edu in data.education %}
+      <li>{{ edu.Degree }} at {{ edu.School }} ({{ edu.Extra }})</li>
+    {% endfor %}
+  </ul>
+
+</body>
+</html>
