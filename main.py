@@ -88,18 +88,22 @@ def extract_education_entries(text):
     ]
     
     in_education_section = False
+    education_headers = ["education", "academic", "degree", "studies"]
+
     for i, line in enumerate(lines):
-        # Look for "EDUCATION" header
-        if "education" in line.lower():
+        line_clean = line.strip().lower()
+
+        # Start scanning when we find a related header
+        if any(header in line_clean for header in education_headers):
             in_education_section = True
             continue
         
         if in_education_section:
-            # If we hit another all-caps header or blank line, stop parsing education
+            # If blank line or all caps new section (e.g., SKILLS), stop
             if line.strip() == "" or line.isupper():
                 break
-            
-            # Check if line contains degree keywords
+
+            # Look for degree keywords
             for keyword in degree_keywords:
                 if keyword.lower() in line.lower():
                     degree = line.strip()
@@ -109,6 +113,7 @@ def extract_education_entries(text):
                         "School": school
                     })
                     break
+
     return education
 
 
