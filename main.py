@@ -80,39 +80,26 @@ def extract_education_entries(text):
     lines = text.splitlines()
     education = []
     degree_keywords = [
-        "BA", "BS", "Bachelor", "Bachelor of Arts", "Bachelor of Science",
-        "MA", "MS", "MBA", "Master", "Master of Arts", "Master of Science", "Master of Business Administration",
-        "PhD", "Doctorate", "Doctor of Philosophy",
-        "Certificate", "Certification",
-        "AA", "AS", "Associate of Arts", "Associate of Science"
+        "Bachelor", "Master", "Certificate", "Associate", "Doctorate",
+        "BA", "BS", "MA", "MS", "MBA", "PhD", "B.A.", "B.S.", "M.A.", "M.S."
     ]
-    
-    in_education_section = False
-    education_headers = ["education", "academic", "degree", "studies"]
 
+    found_education_section = False
     for i, line in enumerate(lines):
-        line_clean = line.strip().lower()
+        line_lower = line.lower()
+        if not found_education_section:
+            if any(keyword.lower() in line_lower for keyword in ["education", "degree", "academic", "certification"]):
+                found_education_section = True
+            continue  # Keep searching until we find the education section
 
-        # Start scanning when we find a related header
-        if any(header in line_clean for header in education_headers):
-            in_education_section = True
-            continue
-        
-        if in_education_section:
-            # If blank line or all caps new section (e.g., SKILLS), stop
-            if line.strip() == "" or line.isupper():
-                break
-
-            # Look for degree keywords
-            for keyword in degree_keywords:
-                if keyword.lower() in line.lower():
-                    degree = line.strip()
-                    school = lines[i + 1].strip() if i + 1 < len(lines) else ""
-                    education.append({
-                        "Degree": degree,
-                        "School": school
-                    })
-                    break
+        # Now we're inside the education section
+        if any(keyword.lower() in line_lower for keyword in degree_keywords):
+            degree = line.strip()
+            school = lines[i - 1].strip() if i > 0 else "Unknown School"
+            education.append({
+                "Degree": degree,
+                "School": school
+            })
 
     return education
 
