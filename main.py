@@ -50,10 +50,24 @@ def extract_experience_entries(text):
     lines = text.splitlines()
     experience = []
     for i, line in enumerate(lines):
-        date_match = re.search(r"(\d{2}/\d{2})\s+[\u2013-]\s+(Present|\d{2}/\d{2})", line)
-        if date_match and i >= 2:
-            title = lines[i - 2].strip()
-            company = lines[i - 1].strip()
+        date_match = re.search(r"(\d{2}/\d{2})\s+[\u2013–-]\s+(Present|\d{2}/\d{2})", line)
+        if date_match:
+            # Look at the 2-3 lines above for title and company
+            title = ""
+            company = ""
+            search_back = 1
+            while i - search_back >= 0 and not title:
+                candidate = lines[i - search_back].strip()
+                if candidate and not candidate.startswith(("•", "-", "*")):
+                    title = candidate
+                search_back += 1
+            search_back += 1
+            while i - search_back >= 0 and not company:
+                candidate = lines[i - search_back].strip()
+                if candidate and not candidate.startswith(("•", "-", "*")):
+                    company = candidate
+                search_back += 1
+
             experience.append({
                 "Title": title,
                 "Company": company,
@@ -66,24 +80,39 @@ def extract_education_entries(text):
     lines = text.splitlines()
     education = []
     start_index = -1
+
+    # Find the EDUCATION section
     for i, line in enumerate(lines):
         if "EDUCATION" in line.upper():
             start_index = i
             break
     if start_index == -1:
         return education
-    for i in range(start_index + 1, len(lines) - 2):
-        degree_line = lines[i].strip()
-        school_line = lines[i + 1].strip()
-        extra_line = lines[i + 2].strip()
-        if degree_line and school_line:
-            degree_match = re.search(r"(BA|BS|MS|MA|PhD|MBA)[^\n]*", degree_line)
-            if degree_match:
-                education.append({
-                    "Degree": degree_match.group(0).strip(),
-                    "School": school_line,
-                    "Extra": extra_line
-                })
+
+    # Start scanning after EDUCATION
+    degree_keywords = ["BA", "BS", "MA", "MS", "MBA", "PhD", "Associate", "Bachelor", "Master", "Doctorate"]
+    end_section_keywords = ["SKILLS", "CORE STRENGTHS", "EXPERIENCE", "PUBLICATIONS"]
+
+    for i in range(start_index + 1, len(lines)):
+        current = lines[i].strip()
+
+        if not current:
+            continue  # Skip blank lines
+
+        if any(end in current.upper() for end in end_section_keywords):
+            break  # Stop when hitting next major section
+
+        if any(degree in current for degree in degree_keywords):
+            # Assume degree + school = 2 lines
+            degree = current
+            school = lines[i - 1].strip() if i - 1 >= 0 else ""
+            extra = lines[i + 1].strip() if i + 1 < len(lines) else ""
+            education.append({
+                "Degree": degree,
+                "School": school,
+                "Extra": extra
+            })
+
     return education
 
 # Main parser
