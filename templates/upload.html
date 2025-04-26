@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <title>Resume Scanner</title>
+</head>
+<body>
+  <h1>ATS Resume Scanner</h1>
+  <form action="/compare" method="post" enctype="multipart/form-data">
+    <h2>Upload Your Resume</h2>
+    <input type="file" name="resume" accept=".pdf,.docx,.txt" required><br><br>
+
+    <h2>Upload a Job Listing or Paste Text</h2>
+    <input type="file" name="jobfile" accept=".pdf,.docx,.txt"><br><br>
+    <textarea name="jobtext" rows="10" cols="50" placeholder="Or paste the job listing text here"></textarea><br><br>
+
+    <button type="submit">Analyze Match</button>
+  </form>
+</body>
+</html>

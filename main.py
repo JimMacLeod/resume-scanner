@@ -87,21 +87,28 @@ def extract_education_entries(text):
     return education
 
 # Main parser
+def extract_text_from_txt(file_path):
+    with open(file_path, "r", encoding="utf-8") as f:
+        return f.read()
 def parse_resume(file_path):
     if not os.path.exists(file_path):
         return None
+
     if file_path.lower().endswith(".pdf"):
         text = extract_text_from_pdf(file_path)
     elif file_path.lower().endswith(".docx"):
         text = extract_text_from_docx(file_path)
+    elif file_path.lower().endswith(".txt"):
+        text = extract_text_from_txt(file_path)
     else:
         return None
+
     return {
         "contact": extract_contact_info(text),
         "skills": extract_skills(text),
         "experience": extract_experience_entries(text),
         "education": extract_education_entries(text),
-    }
+    }    
 
 # Render resume data to HTML
 def render_html_from_parsed_data(data):
