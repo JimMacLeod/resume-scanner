@@ -52,17 +52,23 @@ import re
 def extract_experience_entries(text):
     lines = text.splitlines()
     experience = []
-    for i, line in enumerate(lines):
-        # Match dates like "07/23 – 04/25" or "July 2020 – Present" or "2020–2024"
-        date_match = re.search(r"(\d{2}/\d{2}|\w+\s\d{4}|\d{4})\s*[–-]\s*(\d{2}/\d{2}|\w+\s\d{4}|Present|\d{4})", line)
-        if date_match and i >= 2:
-            title = lines[i-2].strip()
-            company = lines[i-1].strip()
-            experience.append({
-                "Title": title,
-                "Company": company,
-                "Dates": date_match.group(0)
-            })
+    date_pattern = re.compile(r"(\d{2}/\d{2}|\w+\s\d{4}|\d{4})\s*[–-]\s*(\d{2}/\d{2}|\w+\s\d{4}|Present|\d{4})", re.IGNORECASE)
+
+    for i in range(len(lines)):
+        line = lines[i].strip()
+        if date_pattern.search(line):
+            # Try to get previous 1-2 lines for Title and Company
+            title = lines[i-2].strip() if i >= 2 else ""
+            company = lines[i-1].strip() if i >= 1 else ""
+
+            # Simple filters to avoid nonsense (empty strings, random bullets)
+            if title and len(title) < 100 and not title.startswith("•"):
+                experience.append({
+                    "Title": title,
+                    "Company": company,
+                    "Dates": line
+                })
+
     return experience
 
 # Updated: Extract education entries
