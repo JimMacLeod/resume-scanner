@@ -46,28 +46,18 @@ def extract_skills(text):
     return sorted(found_skills)
 
 # Extract experience entries
+import re
+
+# Updated: Extract experience entries
 def extract_experience_entries(text):
     lines = text.splitlines()
     experience = []
     for i, line in enumerate(lines):
-        date_match = re.search(r"(\d{2}/\d{2})\s+[\u2013–-]\s+(Present|\d{2}/\d{2})", line)
-        if date_match:
-            # Look at the 2-3 lines above for title and company
-            title = ""
-            company = ""
-            search_back = 1
-            while i - search_back >= 0 and not title:
-                candidate = lines[i - search_back].strip()
-                if candidate and not candidate.startswith(("•", "-", "*")):
-                    title = candidate
-                search_back += 1
-            search_back += 1
-            while i - search_back >= 0 and not company:
-                candidate = lines[i - search_back].strip()
-                if candidate and not candidate.startswith(("•", "-", "*")):
-                    company = candidate
-                search_back += 1
-
+        # Match dates like "07/23 – 04/25" or "July 2020 – Present" or "2020–2024"
+        date_match = re.search(r"(\d{2}/\d{2}|\w+\s\d{4}|\d{4})\s*[–-]\s*(\d{2}/\d{2}|\w+\s\d{4}|Present|\d{4})", line)
+        if date_match and i >= 2:
+            title = lines[i-2].strip()
+            company = lines[i-1].strip()
             experience.append({
                 "Title": title,
                 "Company": company,
@@ -75,31 +65,42 @@ def extract_experience_entries(text):
             })
     return experience
 
-# Extract education entries
+# Updated: Extract education entries
 def extract_education_entries(text):
     lines = text.splitlines()
     education = []
-    degree_keywords = [
-        "Bachelor", "Master", "Certificate", "Associate", "Doctorate",
-        "BA", "BS", "MA", "MS", "MBA", "PhD", "B.A.", "B.S.", "M.A.", "M.S."
-    ]
+    start_index = -1
 
-    found_education_section = False
+    # Find where EDUCATION section starts
     for i, line in enumerate(lines):
-        line_lower = line.lower()
-        if not found_education_section:
-            if any(keyword.lower() in line_lower for keyword in ["education", "degree", "academic", "certification"]):
-                found_education_section = True
-            continue  # Keep searching until we find the education section
+        if "EDUCATION" in line.upper():
+            start_index = i
+            break
 
-        # Now we're inside the education section
-        if any(keyword.lower() in line_lower for keyword in degree_keywords):
-            degree = line.strip()
-            school = lines[i - 1].strip() if i > 0 else "Unknown School"
-            education.append({
-                "Degree": degree,
-                "School": school
-            })
+    if start_index == -1:
+        return education
+
+    # Look for lines after EDUCATION
+    stop_words = ["SKILLS", "EXPERIENCE", "PROFESSIONAL EXPERIENCE", "SUMMARY", "CERTIFICATIONS"]
+    for i in range(start_index + 1, len(lines) - 2):
+        line_upper = lines[i].strip().upper()
+
+        # Stop if we hit a new major section
+        if any(stop in line_upper for stop in stop_words):
+            break
+
+        degree_line = lines[i].strip()
+        school_line = lines[i+1].strip()
+        extra_line = lines[i+2].strip()
+
+        if degree_line and school_line:
+            # Match degrees based on keywords
+            if re.search(r"(BA|BS|MS|MA|MBA|PHD|BACHELOR|MASTER|CERTIFICATE)", degree_line.upper()):
+                education.append({
+                    "Degree": degree_line,
+                    "School": school_line,
+                    "Extra": extra_line
+                })
 
     return education
 
