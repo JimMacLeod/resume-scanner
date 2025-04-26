@@ -79,41 +79,25 @@ def extract_experience_entries(text):
 def extract_education_entries(text):
     lines = text.splitlines()
     education = []
-    start_index = -1
-
-    # Find the EDUCATION section
+    degree_keywords = [
+        "BA", "BS", "Bachelor", "Bachelor of Arts", "Bachelor of Science",
+        "MA", "MS", "MBA", "Master", "Master of Arts", "Master of Science", "Master of Business Administration",
+        "PhD", "Doctorate", "Doctor of Philosophy",
+        "Certificate", "Certification",
+        "AA", "AS", "Associate of Arts", "Associate of Science"
+    ]
     for i, line in enumerate(lines):
-        if "EDUCATION" in line.upper():
-            start_index = i
-            break
-    if start_index == -1:
-        return education
-
-    # Start scanning after EDUCATION
-    degree_keywords = ["BA", "BS", "MA", "MS", "MBA", "PhD", "Associate", "Bachelor", "Master", "Doctorate"]
-    end_section_keywords = ["SKILLS", "CORE STRENGTHS", "EXPERIENCE", "PUBLICATIONS"]
-
-    for i in range(start_index + 1, len(lines)):
-        current = lines[i].strip()
-
-        if not current:
-            continue  # Skip blank lines
-
-        if any(end in current.upper() for end in end_section_keywords):
-            break  # Stop when hitting next major section
-
-        if any(degree in current for degree in degree_keywords):
-            # Assume degree + school = 2 lines
-            degree = current
-            school = lines[i - 1].strip() if i - 1 >= 0 else ""
-            extra = lines[i + 1].strip() if i + 1 < len(lines) else ""
-            education.append({
-                "Degree": degree,
-                "School": school,
-                "Extra": extra
-            })
-
+        for keyword in degree_keywords:
+            if keyword.lower() in line.lower():
+                degree = line.strip()
+                school = lines[i + 1].strip() if i + 1 < len(lines) else ""
+                education.append({
+                    "Degree": degree,
+                    "School": school
+                })
+                break
     return education
+
 
 # Main parser
 def extract_text_from_txt(file_path):
