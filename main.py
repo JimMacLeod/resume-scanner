@@ -75,23 +75,28 @@ def extract_experience_entries(text):
 def extract_education_entries(text):
     lines = text.splitlines()
     education = []
-    capturing = False
+    start_index = -1
+    for i, line in enumerate(lines):
+        if "EDUCATION" in line.upper():
+            start_index = i
+            break
+    if start_index == -1:
+        return education
 
-    education_keywords = ["education", "academic", "university", "college", "school", "degree", "bachelor", "master", "phd", "mba", "certificate", "certification", "associates"]
-    stop_keywords = ["experience", "skills", "projects", "certifications", "summary", "work history"]
+    for i in range(start_index + 1, len(lines) - 2):
+        degree_line = lines[i].strip()
+        school_line = lines[i + 1].strip()
+        extra_line = lines[i + 2].strip()
 
-    for line in lines:
-        line_lower = line.lower().strip()
+        degree_match = re.search(r"(BA|BS|MA|MS|MBA|PhD|BACHELOR|MASTER|CERTIFICATE|ASSOCIATE)[^\n]*", degree_line, re.IGNORECASE)
 
-        if any(keyword in line_lower for keyword in education_keywords):
-            capturing = True
-            continue  # Skip the actual header line
-
-        if capturing:
-            if any(stop_keyword in line_lower for stop_keyword in stop_keywords):
-                break  # Stop capturing if a stop word is found
-            if line.strip():  # Only add non-empty lines
-                education.append(line.strip())
+        # Only add an entry if we have something meaningful
+        if degree_match or school_line:
+            education.append({
+                "Degree": degree_match.group(0).strip() if degree_match else "Unknown Degree",
+                "School": school_line if school_line else "Unknown School",
+                "Extra": extra_line if extra_line else ""
+            })
 
     return education
 
